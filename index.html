@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Iloveyou always mayie</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow-x:hidden; -webkit-tap-highlight-color:transparent; }
+body { font-family:'Lato',sans-serif; background:#2a4d10; min-height:100vh; position:relative; }
+
+/* ═══════════════════════════════════
+   GARDEN BACKGROUND
+═══════════════════════════════════ */
+#garden-bg {
+  position:fixed;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  background:linear-gradient(to bottom,
+    #5fc3e4 0%, #a8dff0 28%,
+    #6db33f 28%, #4a8c1c 50%,
+    #3a6b14 50%, #2a4d10 100%
+  );
+}
+#garden-bg::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(89deg,transparent 0,transparent 4px,rgba(0,0,0,0.025) 4px,rgba(0,0,0,0.025) 5px);
+  pointer-events:none;
+}
+
+/* ── Clouds ── */
+.cloud {
+  position:absolute;
+  background:rgba(255,255,255,0.80);
+  border-radius:999px;
+  pointer-events:none;
+  animation:cloudDrift linear infinite;
+}
+.cloud::before,.cloud::after { content:''; position:absolute; background:inherit; border-radius:50%; }
+@keyframes cloudDrift { from{transform:translateX(-220px)} to{transform:translateX(110vw)} }
+
+/* ── Tulips ── */
+.tulip {
+  position:absolute;
+  bottom:0;
+  transform-origin:bottom center;
+  animation:tulipSway ease-in-out infinite;
+}
+@keyframes tulipSway {
+  0%,100%{transform:rotate(-2.8deg)}
+  50%    {transform:rotate(2.8deg)}
+}
+
+/* ═══════════════════════════════════
+   APP SHELL
+═══════════════════════════════════ */
+.app {
+  position:relative;
+  z-index:10;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:20px 16px 40px;
+}
+.album-title {
+  font-family:'Playfair Display',serif;
+  font-size:clamp(1.6rem,5vw,3rem);
+  color:#fff9f0;
+  text-shadow:1px 3px 14px rgba(0,0,0,0.55);
+  letter-spacing:2px;
+  text-align:center;
+  line-height:1.2;
+}
+.subtitle {
+  color:#000000;
+  font-size:0.78rem;
+  font-weight:300;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  margin:6px 0 32px;
+  text-shadow:1px 2px 6px rgba(0,0,0,0.4);
+}
+
+/* ═══════════════════════════════════
+   BOOK STAGE
+═══════════════════════════════════ */
+.book-stage {
+  width:100%;
+  max-width:860px;
+  height:540px;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ── The flipbook container ── */
+#bookWrapper {
+  width:100%;
+  height:500px;
+  position:relative;
+  transform-style:preserve-3d;
+  perspective:1500px;
+  overflow:hidden;
+  border-radius:10px;
+}
+
+/* ═══════════════════════════════════
+   BACKGROUND SPREAD
+   Always sits behind all leaves.
+   Gives the open-book look at all times.
+═══════════════════════════════════ */
+.bg-spread {
+  position:absolute;
+  inset:0;
+  display:flex;
+  width:100%;
+  height:100%;
+  z-index:0;
+  filter:drop-shadow(0 22px 45px rgba(0,0,0,0.48));
+  pointer-events:none;
+}
+.bg-left {
+  width:50%;
+  height:100%;
+  background:linear-gradient(105deg,#fdf0de 0%,#fdfaf2 100%);
+  border-radius:8px 0 0 8px;
+  box-shadow:inset -4px 0 12px rgba(0,0,0,0.08);
+}
+.bg-right {
+  width:50%;
+  height:100%;
+  background:linear-gradient(255deg,#fdf0de 0%,#fdfaf2 100%);
+  border-radius:0 8px 8px 0;
+  box-shadow:inset 4px 0 12px rgba(0,0,0,0.06);
+}
+
+/* ═══════════════════════════════════
+   LEAF — the page-turn unit
+═══════════════════════════════════ */
+.leaf {
+  position:absolute;
+  transform-style:preserve-3d;
+  height:100%;
+  width:50%;
+  left:50%;
+  top:0;
+  /* Slower, more realistic easing — fast start, gradual settle */
+  transition:transform 1.1s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  transform-origin:left center;
+  will-change:transform;
+}
+
+.leaf .page {
+  transform-style:preserve-3d;
+  position:absolute;
+  width:100%;
+  height:100%;
+  top:0; left:0;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  overflow:hidden;
+}
+
+.leaf .page.front {
+  transform:rotateY(0deg) translateZ(0.5px);
+  border-radius:0 8px 8px 0;
+}
+.leaf .page.back {
+  transform:rotateY(180deg) translateZ(0.5px);
+  border-radius:8px 0 0 8px;
+}
+
+/* ── Page curl shadow overlay on front face ──
+   As the page turns, a darkening gradient sweeps left to right
+   simulating the shadow cast by the curling paper */
+.leaf .page.front::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to left,
+    rgba(0,0,0,0.18) 0%,
+    rgba(0,0,0,0.06) 30%,
+    transparent 60%
+  );
+  opacity:0;
+  transition:opacity 1.1s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  pointer-events:none;
+  z-index:2;
+  border-radius:inherit;
+}
+
+/* ── Page curl shadow on back face ──
+   When the back face appears (page is now on the left),
+   a shadow on the right edge shows the spine fold */
+.leaf .page.back::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to right,
+    rgba(0,0,0,0.22) 0%,
+    rgba(0,0,0,0.08) 25%,
+    transparent 55%
+  );
+  opacity:0;
+  transition:opacity 1.1s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  pointer-events:none;
+  z-index:2;
+  border-radius:inherit;
+}
+
+/* Show shadows when leaf is in motion (turning) */
+.leaf.turning .page.front::after,
+.leaf.turning .page.back::after {
+  opacity:1;
+}
+
+/* THE FLIP — with slight perspective lean for realism */
+.leaf.turned {
+  transform:rotateY(-180deg);
+}
+
+/* Cover — full width, flips from right edge */
+.leaf.cover {
+  width:100%;
+  left:0;
+  transform-origin:right center;
+}
+.leaf.cover .page.front {
+  border-radius:8px;
+}
+.leaf.cover .page.back {
+  transform:rotateY(180deg) translateZ(0.5px);
+  border-radius:8px 0 0 8px;
+  width:50%;
+  left:0;
+  right:auto;
+}
+
+/* ═══════════════════════════════════
+   PAGE CONTENT — your original styles kept intact
+═══════════════════════════════════ */
+.page-left, .page-right {
+  width:100%;
+  height:100%;
+  padding:28px 22px 38px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  position:relative;
+  overflow:hidden;
+}
+.page-left {
+  background:linear-gradient(105deg,#fdf0de 0%,#fdfaf2 100%);
+  box-shadow:inset -8px 0 22px rgba(0,0,0,0.10);
+}
+.page-right {
+  background:linear-gradient(255deg,#fdf0de 0%,#fdfaf2 100%);
+  box-shadow:inset 8px 0 22px rgba(0,0,0,0.07);
+}
+
+/* Ruled paper lines */
+.page-left::before, .page-right::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(transparent,transparent 31px,rgba(210,180,140,0.15) 31px,rgba(210,180,140,0.15) 32px);
+  pointer-events:none;
+}
+
+/* Spine strip shown between pages on open spread */
+.spine-strip {
+  position:absolute;
+  left:50%;
+  top:0;
+  transform:translateX(-50%);
+  width:20px;
+  height:100%;
+  background:linear-gradient(to right,#b07840,#d4a96a,#e8c88a,#d4a96a,#b07840);
+  box-shadow:0 0 16px rgba(0,0,0,0.32);
+  z-index:10;
+  pointer-events:none;
+}
+.spine-strip::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 18px,rgba(0,0,0,0.07) 18px,rgba(0,0,0,0.07) 19px);
+}
+
+.page-label {
+  font-family:'Playfair Display',serif;
+  font-size:0.68rem;
+  color:#b0926a;
+  text-align:center;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+.page-corner {
+  position:absolute;
+  top:12px;
+  font-size:1rem;
+  opacity:0.42;
+  user-select:none;
+}
+.page-left  .page-corner { right:18px; }
+.page-right .page-corner { left:18px; }
+.page-num {
+  position:absolute;
+  bottom:12px;
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:0.72rem;
+  color:#b0926a;
+}
+.page-left  .page-num { left:18px; }
+.page-right .page-num { right:18px; }
+
+/* ── Photo Slot ── */
+.photo-slot {
+  flex:1;
+  position:relative;
+  border:2px dashed #d4b896;
+  border-radius:6px;
+  overflow:hidden;
+  background:#f5ead8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:170px;
+  transition:border-color 0.25s,box-shadow 0.25s;
+}
+.photo-slot img {
+  position:absolute;
+  inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  display:none;
+}
+.photo-slot video {
+  position:absolute;
+  inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  display:none;
+}
+.photo-slot.has-image img,
+.photo-slot.has-image video { display:block; }
+.photo-slot.has-image .upload-hint { display:none; }
+.upload-hint {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  color:#c4a882;
+  pointer-events:none;
+  user-select:none;
+}
+.upload-hint svg { opacity:0.4; }
+.upload-hint span { font-size:0.72rem; letter-spacing:1.5px; text-transform:uppercase; }
+.photo-input { display:none; }
+
+/* ── Caption ── */
+.caption-static {
+  width:100%;
+  margin-top:8px;
+  padding:6px 8px 2px;
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:0.85rem;
+  color:#3a2a1a;
+  text-align:center;
+}
+
+/* ═══════════════════════════════════
+   COVER
+═══════════════════════════════════ */
+.cover-spread {
+  width:100%;
+  height:100%;
+  border-radius:10px;
+  overflow:hidden;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:50px 36px;
+  background:linear-gradient(138deg,#7b1428 0%,#b02535 40%,#d94060 70%,#f09ab2 100%);
+  filter:drop-shadow(0 22px 45px rgba(0,0,0,0.5));
+}
+.cover-spread::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(ellipse 160px 160px at 15% 85%,rgba(255,255,255,0.10) 0%,transparent 70%),
+    radial-gradient(ellipse 200px 200px at 85% 15%,rgba(255,255,255,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 100px 100px at 50% 50%,rgba(255,255,255,0.05) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cover-frame {
+  position:absolute;
+  inset:20px;
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:6px;
+  pointer-events:none;
+}
+.cover-frame::before {
+  content:'';
+  position:absolute;
+  inset:6px;
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:4px;
+}
+.cover-photo-frame {
+  position:relative;
+  width:min(260px,70%);
+  aspect-ratio:3/4;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 16px 40px rgba(0,0,0,0.55);
+  margin-bottom:26px;
+  z-index:2;
+}
+.cover-photo-frame img {
+  width:100%; height:100%;
+  object-fit:cover;
+  display:block;
+}
+.cover-rule {
+  width:55px; height:1px;
+  background:rgba(255,255,255,0.38);
+  margin:16px auto;
+  position:relative; z-index:2;
+}
+.cover-title-input {
+  font-family:'Playfair Display',serif;
+  font-size:clamp(1.9rem,6vw,3.6rem);
+  color:#fff;
+  text-align:center;
+  background:transparent;
+  border:none;
+  outline:none;
+  text-shadow:2px 4px 18px rgba(0,0,0,0.32);
+  width:100%;
+  position:relative; z-index:2;
+  line-height:1.2;
+}
+.cover-title-input::placeholder { color:rgba(255,255,255,0.40); }
+.cover-sub-input {
+  font-family:'Lato',sans-serif;
+  font-weight:300;
+  font-size:clamp(0.68rem,2vw,0.88rem);
+  color:rgba(255,255,255,0.68);
+  letter-spacing:5px;
+  text-transform:uppercase;
+  text-align:center;
+  background:transparent;
+  border:none;
+  outline:none;
+  width:100%;
+  margin-top:12px;
+  position:relative; z-index:2;
+}
+.cover-sub-input::placeholder { color:rgba(255,255,255,0.32); }
+.cover-hint {
+  position:absolute;
+  bottom:22px;
+  left:0; right:0;
+  text-align:center;
+  color:rgba(255,255,255,0.46);
+  font-size:0.7rem;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  animation:hintPulse 2.2s ease-in-out infinite;
+  user-select:none;
+  z-index:2;
+}
+@keyframes hintPulse { 0%,100%{opacity:0.35} 50%{opacity:0.9} }
+
+/* ═══════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════ */
+.nav-area {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-top:6px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.nav-btn {
+  background:rgba(255,255,255,0.14);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1.5px solid rgba(255,255,255,0.28);
+  color:#fff;
+  font-family:'Playfair Display',serif;
+  font-size:0.95rem;
+  padding:10px 26px;
+  border-radius:40px;
+  cursor:pointer;
+  transition:background 0.2s,transform 0.15s,box-shadow 0.2s;
+  letter-spacing:0.5px;
+  min-width:88px;
+  touch-action:manipulation;
+}
+.nav-btn:hover:not(:disabled) {
+  background:rgba(255,255,255,0.26);
+  transform:translateY(-2px);
+  box-shadow:0 6px 18px rgba(0,0,0,0.22);
+}
+.nav-btn:active:not(:disabled) { transform:scale(0.96); }
+.nav-btn:disabled { opacity:0.28; cursor:not-allowed; }
+.page-indicator {
+  color:#fde8c8;
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:0.95rem;
+  min-width:110px;
+  text-align:center;
+  text-shadow:1px 2px 6px rgba(0,0,0,0.4);
+  user-select:none;
+}
+.add-page-btn {
+  background:linear-gradient(135deg,#f4a7b9,#e8344a);
+  border:none;
+  color:#fff;
+  font-family:'Lato',sans-serif;
+  font-size:0.74rem;
+  padding:10px 22px;
+  border-radius:30px;
+  cursor:pointer;
+  letter-spacing:2.5px;
+  text-transform:uppercase;
+  box-shadow:0 4px 16px rgba(232,52,74,0.38);
+  transition:transform 0.18s,box-shadow 0.18s;
+  margin-top:8px;
+  touch-action:manipulation;
+}
+.add-page-btn:hover { transform:translateY(-2px); box-shadow:0 7px 22px rgba(232,52,74,0.5); }
+.add-page-btn:active { transform:scale(0.97); }
+
+/* ═══════════════════════════════════
+   MOBILE
+═══════════════════════════════════ */
+@media(max-width:640px){
+  .app { padding:8px 6px 20px; justify-content:flex-start; flex-wrap:nowrap; }
+  .album-title { font-size:clamp(1rem,5vw,1.6rem); }
+  .subtitle { font-size:0.55rem; letter-spacing:2px; margin:4px 0 12px; }
+  .book-stage { height:300px; min-height:300px; flex:1; margin:auto; }
+  #bookWrapper { height:260px; }
+  .page-left, .page-right { padding:8px 6px 10px; gap:4px; }
+  .photo-slot { min-height:50px; border-width:1px; }
+  .caption-static { font-size:0.6rem; padding:2px; }
+  .page-label { font-size:0.5rem; }
+  .page-corner { top:4px; font-size:0.7rem; }
+  .page-num { bottom:4px; font-size:0.5rem; }
+  .cover-spread { padding:16px 12px; }
+  .cover-photo-frame { width:min(100px,40%); margin-bottom:10px; }
+  .cover-title-input { font-size:clamp(0.9rem,4vw,1.4rem); }
+  .cover-sub-input { font-size:0.5rem; letter-spacing:1px; }
+  .cover-rule { width:25px; margin:8px auto; }
+  .cover-hint { bottom:6px; font-size:0.45rem; }
+  .nav-area { gap:6px; margin-top:4px; }
+  .nav-btn { padding:6px 12px; font-size:0.65rem; min-width:50px; }
+  .page-indicator { font-size:0.65rem; min-width:50px; }
+  .add-page-btn { padding:6px 12px; font-size:0.5rem; margin-top:4px; }
+  .spine-strip { width:6px; }
+}
+@media(max-width:360px){
+  .book-stage { height:240px !important; }
+  #bookWrapper { height:200px !important; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.22); border-radius:4px; }
+
+/* ═══════════════════════════════════
+   ENVELOPE LETTER OVERLAY
+═══════════════════════════════════ */
+.envelope-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity 0.4s, visibility 0.4s;
+}
+.envelope-overlay.active { opacity:1; visibility:visible; }
+.envelope-container {
+  position:relative;
+  width:280px;
+  height:200px;
+  cursor:pointer;
+  transition:transform 0.3s;
+}
+.envelope-container:hover { transform:scale(1.05); }
+.envelope-close-img {
+  position:absolute;
+  width:100%; height:100%;
+  object-fit:contain;
+}
+.envelope-open-img {
+  position:absolute;
+  width:100%; height:100%;
+  object-fit:contain;
+  opacity:0;
+  transform:rotateX(90deg);
+  transform-origin:bottom;
+  transition:opacity 0.5s 0.2s, transform 0.5s 0.2s;
+}
+.envelope-container.opened .envelope-close-img {
+  opacity:0;
+  transform:rotateX(-90deg);
+  transform-origin:bottom;
+  transition:opacity 0.4s, transform 0.4s;
+}
+.envelope-container.opened .envelope-open-img {
+  opacity:1;
+  transform:rotateX(0deg);
+}
+.letter-card {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%) scale(0.8);
+  width:min(520px, 90vw);
+  max-height:82vh;
+  overflow-y:auto;
+  /* Aged paper texture with warm cream tones */
+  background:
+    linear-gradient(rgba(255,248,230,0.95), rgba(255,243,215,0.95)),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 31px,
+      rgba(180,140,100,0.13) 31px,
+      rgba(180,140,100,0.13) 32px
+    );
+  background-color:#fdf6e3;
+  border-radius:3px;
+  /* Left red margin line */
+  border-left:3px solid rgba(200,80,80,0.25);
+  padding:48px 36px 40px 44px;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.08),
+    0 8px 24px rgba(0,0,0,0.18),
+    0 24px 56px rgba(0,0,0,0.22),
+    /* Paper curl at bottom right corner */
+    4px 4px 0 -2px #f0e8cc,
+    5px 5px 0 -2px rgba(0,0,0,0.06);
+  opacity:0;
+  visibility:hidden;
+  transition:opacity 0.4s 0.4s, visibility 0.4s 0.4s, transform 0.4s 0.4s;
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  color:#3a2a18;
+  text-align:left;
+  line-height:2;
+  font-size:0.9rem;
+  /* Slight rotation for that hand-written letter feel */
+  /* Paper edge effect */
+  outline:1px solid rgba(180,140,80,0.15);
+  outline-offset:-8px;
+}
+
+/* Scrollbar styled like aged paper */
+.letter-card::-webkit-scrollbar { width:4px; }
+.letter-card::-webkit-scrollbar-track { background:rgba(180,140,80,0.08); }
+.letter-card::-webkit-scrollbar-thumb { background:rgba(180,140,80,0.3); border-radius:2px; }
+
+/* Decorative wax-seal style heart at the top */
+.letter-card::before {
+  content:'♥';
+  display:block;
+  text-align:center;
+  font-size:1.4rem;
+  color:rgba(180,60,60,0.5);
+  margin-bottom:12px;
+  letter-spacing:6px;
+}
+
+/* Bottom flourish */
+.letter-card::after {
+  content:'~ ♥ ~';
+  display:block;
+  text-align:center;
+  font-size:0.85rem;
+  color:rgba(180,60,60,0.4);
+  margin-top:20px;
+  letter-spacing:8px;
+  font-style:italic;
+}
+
+.letter-card p {
+  margin-bottom:16px;
+  position:relative;
+}
+
+/* "Hi mahal" greeting styled bigger and warmer */
+.letter-card p:first-of-type {
+  font-size:1.05rem;
+  font-weight:700;
+  color:#7b2c2c;
+  margin-bottom:18px;
+}
+
+/* Last paragraph styled as a sign-off */
+.letter-card p:last-of-type {
+  font-size:0.82rem;
+  color:#8a6a4a;
+  font-style:italic;
+  margin-bottom:0;
+}
+
+.envelope-container.opened + .letter-card {
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,-50%) scale(1);
+}
+
+.letter-card .close-letter {
+  position:sticky;
+  top:0;
+  float:right;
+  margin-right:-8px;
+  margin-top:-8px;
+  font-size:16px;
+  cursor:pointer;
+  color:rgba(120,80,60,0.5);
+  background:rgba(253,246,227,0.9);
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:color 0.2s, background 0.2s;
+  z-index:10;
+}
+.letter-card .close-letter:hover {
+  color:#7b2c2c;
+  background:rgba(253,230,210,0.95);
+}
+
+</style>
+</head>
+<body>
+
+<div id="garden-bg"></div>
+
+<div class="app">
+  <h1 class="album-title">Always in my Heart🌷</h1>
+  <p class="subtitle">A garden of memories</p>
+
+  <div class="book-stage">
+    <div id="bookWrapper">
+      <!-- Always-visible open book background -->
+      <div class="bg-spread">
+        <div class="bg-left"></div>
+        <div class="bg-right"></div>
+      </div>
+      <!-- Spine always visible in center -->
+      <div class="spine-strip"></div>
+    </div>
+  </div>
+
+  <div class="nav-area">
+    <button class="nav-btn" id="prevBtn">← Prev</button>
+    <span class="page-indicator" id="pageIndicator">Cover</span>
+    <button class="nav-btn" id="nextBtn">Next →</button>
+  </div>
+  <button class="add-page-btn" id="addPageBtn">I wrote you a letter from my heart</button>
+</div>
+
+<!-- Envelope Letter Overlay -->
+<div class="envelope-overlay" id="envelopeOverlay">
+  <div class="envelope-container" id="envelopeContainer">
+    <img src="Pictures/post-close.png" class="envelope-close-img" alt="Envelope closed">
+    <img src="Pictures/post.png" class="envelope-open-img" alt="Envelope open">
+  </div>
+  <div class="letter-card" id="letterCard">
+    <span class="close-letter" id="closeLetter">✕</span>
+    <p>Hi mahal,</p>
+    <p>It's been a month since we broke up, and I still find myself caring for you. Hindi talaga kita makalimutan kahit ganito na tayo ngayon. I still hope that someday, maybe it will still be you. Palagi kong namimiss yung happy moments natin together.</p>
+    <p>Ang hirap pala talagang mag-let go kapag sobra mong napamahal ang isang tao sa'yo. Yung tipong kasama mo siya sa pagbuo ng mga pangarap at goals sa buhay, tapos biglang darating yung panahon na maghihiwalay pala kayo.</p>
+    <p>I'm really sorry kung hindi agad ako gumawa ng actions para ma-keep ka. Akala ko kasi minsan tantrums mo lang yun, kaya inaasar pa kita tapos saka kita sinusuyo. Pero gusto kong malaman mo na minahal talaga kita ng tapat at sa abot ng makakaya ko.</p>
+    <p>Gusto ko ring mag-thank you sa'yo, kasi napakarami mong improvements na nadulot sa buhay ko. Naging tunay akong masaya during our time together. Akala ko nga noon hindi na matatapos yun, at makakaya pa nating i-save yung relationship natin. I believed that during those times, a hug could fix everything.</p>
+    <p>Pero dumating yung moment na nagyakapan tayo… hindi para ayusin ang lahat, kundi para magpaalam sa isa't isa.</p>
+    <p>Simula noon, ang dami kong realizations. Ang dami kong napag-isip-isip tungkol sa mga mali kong nagawa. Sana pala mas ginalingan ko pa. Kaya ko naman eh. Dapat pala mas naging maingat ako sa'yo para hindi ka nawala sa akin.</p>
+    <p>Pero alam kong nakagawa ka na ng decision mo, at rerespetuhin ko yun. Even so, I'm still praying for you. Umaasa pa rin ako na kung perfect timing na ni God, baka ikaw pa rin yung ibalik Niya sa akin. Sana kapag handa na talaga tayo pareho, tayo pa rin yung magse-settle sa huli.</p>
+    <p>Kaya ginawa ko itong last website para sa'yo. Para kahit papaano, ma-preserve yung love natin together. Kahit sa pictures at video clips lang, nandoon pa rin yung special memories natin. Parang isang documentation ng kung gaano natin kamahal ang isa't isa noon.</p>
+    <p>Paalam, my greatest lost love.</p>
+    <p>I truly hope you find your way, and I pray for your success in life. Kahit hindi na tayo magkasama, ipagpe-pray pa rin kita palagi.</p>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════
+   GARDEN
+═══════════════════════════════ */
+const COLORS = [
+  {f:'#e8344a',c:'#a81828'},{f:'#f4a7b9',c:'#cc6070'},
+  {f:'#f7d060',c:'#c89000'},{f:'#9b5de5',c:'#6e28c0'},
+  {f:'#ff6b35',c:'#c03800'},{f:'#fffaf0',c:'#e8c8d0'},
+  {f:'#f72585',c:'#b00055'},{f:'#5bc8f5',c:'#0080b8'},
+  {f:'#80ed99',c:'#28a048'},{f:'#ffd166',c:'#c08800'},
+];
+function tulipPaths(c,h){
+  const b=h;
+  return `
+  <path d="M20 ${b} Q17 ${b-26} 20 ${b-56}" stroke="#3c820f" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <path d="M19 ${b-30} Q4 ${b-46} 8 ${b-60} Q15 ${b-45} 19 ${b-36}" fill="#4e9e1a" opacity="0.9"/>
+  <path d="M21 ${b-40} Q36 ${b-55} 34 ${b-68} Q26 ${b-53} 21 ${b-46}" fill="#4e9e1a" opacity="0.9"/>
+  <ellipse cx="20" cy="${b-76}" rx="7"   ry="13"  fill="${c.f}" transform="rotate(-18,20,${b-76})"/>
+  <ellipse cx="20" cy="${b-76}" rx="7"   ry="13"  fill="${c.f}" transform="rotate(18,20,${b-76})"/>
+  <ellipse cx="20" cy="${b-78}" rx="6.2" ry="12"  fill="${c.f}" opacity="0.88"/>
+  <ellipse cx="13" cy="${b-72}" rx="5"   ry="10"  fill="${c.f}" transform="rotate(-32,13,${b-72})" opacity="0.82"/>
+  <ellipse cx="27" cy="${b-72}" rx="5"   ry="10"  fill="${c.f}" transform="rotate(32,27,${b-72})"  opacity="0.82"/>
+  <ellipse cx="20" cy="${b-80}" rx="3.5" ry="5.5" fill="${c.c}" opacity="0.48"/>`;
+}
+function buildGarden(){
+  const el=document.getElementById('garden-bg');
+  const W=window.innerWidth, mob=W<640;
+  const clouds=[
+    {w:180,h:50,top:4,dur:55,del:0},{w:120,h:36,top:8,dur:38,del:-14},
+    {w:240,h:60,top:2,dur:70,del:-32},{w:95,h:30,top:12,dur:44,del:-7},
+  ];
+  let html=clouds.map(cd=>`<div class="cloud" style="width:${cd.w}px;height:${cd.h}px;top:${cd.top}%;animation-duration:${cd.dur}s;animation-delay:${cd.del}s;"></div>`).join('');
+  function row(n,hRange,btm,opacity,bright,sc){
+    let r='';
+    for(let i=0;i<n;i++){
+      const col=COLORS[Math.floor(Math.random()*COLORS.length)];
+      const h=hRange[0]+Math.random()*(hRange[1]-hRange[0]);
+      const left=(i/n*106)-1+(Math.random()*2-1);
+      const dur=(2.6+Math.random()*2.2).toFixed(1);
+      const delay=(Math.random()*2.5).toFixed(1);
+      const dir=Math.random()>.5?'alternate':'alternate-reverse';
+      const w=Math.round(40*sc),hh=Math.round(h);
+      r+=`<div class="tulip" style="left:${left}%;bottom:${btm}px;animation-duration:${dur}s;animation-delay:${delay}s;animation-direction:${dir};opacity:${opacity};transform:scale(${sc});filter:brightness(${bright});"><svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh}" viewBox="0 0 40 ${hh}">${tulipPaths(col,hh)}</svg></div>`;
+    }
+    return r;
+  }
+  const base=mob?28:38;
+  html+=row(mob?15:24,[50,68],base+22,0.42,0.68,0.70);
+  html+=row(mob?20:32,[68,96],base+5,0.70,0.84,0.87);
+  html+=row(mob?14:22,[88,130],0,1.00,1.00,1.00);
+  el.innerHTML=html;
+}
+buildGarden();
+let resizeTimer;
+window.addEventListener('resize',()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(buildGarden,300); });
+
+/* ═══════════════════════════════
+   ALBUM DATA
+═══════════════════════════════ */
+let pages = [];
+
+const MEDIA_FILES = [
+  "IMG20230228114718_01.jpg","IMG20230303130714_01.jpg","IMG20230604160951_01.jpg",
+  "IMG20230613092521_01.jpg","IMG20230623155712_01.jpg","IMG20230623164033.jpg",
+  "IMG20230623164038.jpg","IMG20230722092326.jpg","IMG20230731161819_01.jpg",
+  "IMG20230731161952_01.jpg","IMG20230731162147_01.jpg","IMG20230731162214.jpg",
+  "IMG20230731162532_01.jpg","IMG20230820091131_01.jpg","IMG20230820091338_01.jpg",
+  "IMG20230820091416_01.jpg","IMG20230820091552_01.jpg","IMG20230820091707_01.jpg",
+  "IMG20230825150722_01.jpg","IMG20230825150851.jpg","IMG20230825155717.jpg",
+  "IMG20230825160309_01.jpg","IMG20230831090716.jpg","IMG20230915140901.jpg",
+  "IMG20230923120630.jpg","IMG20230923120925_01.jpg","IMG20230928195209.jpg",
+  "IMG20230929084459.jpg","IMG20231106130933.jpg","IMG20231106162253_01.jpg",
+  "IMG20231106163203_01.jpg","IMG20231106163209_01.jpg","IMG20231127182543_01.jpg",
+  "IMG20231217130920_01.jpg","IMG20231218132201.jpg","IMG20240115111918_01.jpg",
+  "IMG20240212145335.jpg","IMG20240630175706_01.jpg","IMG20240630181316_01.jpg",
+  "IMG20240630181414_01.jpg","IMG20240704204014_01.jpg","IMG20240715060441_01.jpg",
+  "IMG20240930103515_01.jpg","IMG20241028152909.jpg","IMG20241210112043_01.jpg",
+  "IMG_0370.JPG","IMG_1279.JPG","IMG_1281.JPG","IMG_1291.JPG","IMG_1292.JPG",
+  "IMG_1296.JPG","IMG_1306.JPG","IMG_1514.JPG","IMG_1519.JPG","IMG_1524.JPG",
+  "IMG_1537.JPG","IMG_1538.JPG","IMG_1539.JPG","IMG_1540.JPG","IMG_1541.JPG",
+  "IMG_1542.JPG","IMG_1543.JPG","IMG_1544.JPG","IMG_1545.JPG","IMG_1546.JPG",
+  "IMG_1547.JPG","IMG_1548.JPG","IMG_1549.JPG","IMG_1566.JPG","IMG_1567.JPG",
+  "IMG_1569.JPG","IMG_1570.JPG","IMG_1571.JPG","IMG_1572.JPG","IMG_1574.JPG",
+  "IMG_1575.JPG","IMG_1576.JPG","IMG_1578.JPG","IMG_1579.JPG","IMG_1580.JPG",
+  "IMG_1581.JPG","IMG_1582.JPG","IMG_1583.JPG","IMG_1584.JPG","IMG_1585.JPG",
+  "IMG_1586.JPG","IMG_1587.JPG","IMG_1589.JPG","IMG_1590.JPG","IMG_1593.JPG",
+  "IMG_1594.JPG","IMG_1595.JPG","IMG_1596.JPG","IMG_1597.JPG","IMG_1598.JPG",
+  "IMG_1599.JPG","IMG_1600.JPG","IMG_1601.JPG","IMG_1602.JPG","IMG_1603.JPG",
+  "IMG_1604.JPG","IMG_1605.JPG","IMG_1606.JPG","IMG_1607.JPG","IMG_1608.JPG",
+  "IMG_1609.JPG","IMG_1610.JPG","IMG_1611.JPG","IMG_1612.JPG","IMG_1613.JPG",
+  "IMG_1614.JPG","IMG_1615.JPG","IMG_1616.JPG","IMG_1617.JPG","IMG_1618.JPG",
+  "IMG_1619.JPG","IMG_1620.JPG","IMG_1621.JPG","IMG_1622.JPG","IMG_1623.JPG",
+  "IMG_1624.JPG","IMG_1625.JPG","IMG_1626.JPG","IMG_1643.JPG","IMG_1644.JPG",
+  "IMG_1645.JPG","IMG_1646.JPG","IMG_1647.JPG","IMG_1674.JPG","IMG_1675.JPG",
+  "IMG_1676.JPG","IMG_1677.JPG","IMG_1678.JPG","IMG_1679.JPG","IMG_1680.JPG",
+  "IMG_1684.JPG","IMG_1685.JPG","IMG_1686.JPG","IMG_1687.JPG","IMG_1688.JPG",
+  "IMG_1689.JPG","IMG_1690.JPG","IMG_1691.JPG",
+  "IMG_20230409_182507.png","IMG_20230618_153935_526.webp","IMG_20230707_112739_463.webp",
+  "IMG_20230714_185745.png","IMG_20230731_204249.jpg","IMG_20230805_171841.jpg",
+  "IMG_20230813_190108.jpg","IMG_20230830_184612_369.webp","IMG_20231004_171033_308.webp",
+  "IMG_20231023_123259_049.webp","IMG_20231212_212553_497.jpg","IMG_20231212_212600_536.jpg",
+  "IMG_20231212_212602_839.jpg","IMG_20240212_201558_424.jpg","IMG_20240326_095232_716.jpg",
+  "IMG_20240326_095234_650.jpg","IMG_20240326_095242_517.jpg","IMG_20240330_103152_319.jpg",
+  "IMG_20240330_103203_214.jpg","IMG_20240719_215230_584.webp",
+  "BBTA6492.JPG","CLXZ6893.JPEG","Cover photo.jpg","download.png","DXZC3583.JPG",
+  "FEJK2965.JPG","HKYN4857.JPG","IQFF7238.JPG","JELD4827.JPG","JMPJ9919.JPEG","LHMM4609.JPEG",
+  "Messenger_creation_1fcf3533-3f29-4cec-b464-dbaafa1bb45c.jpeg",
+  "Messenger_creation_5DECAE54-AC83-49CE-BA58-091D89A0A1F0.jpeg",
+  "Messenger_creation_6a0ae9a5-397f-4b3f-b57a-d5135d6014d6.jpeg",
+  "Messenger_creation_6F6160A4-AF6A-4B3E-A4DB-1509BD3EBE74.jpeg",
+  "Messenger_creation_7DCC19F2-8865-4CE5-B02A-76DB912259FF.jpeg",
+  "Messenger_creation_8aef2fd2-baa5-4c98-a526-0b004d4365ba.jpeg",
+  "Messenger_creation_8E43E442-2A47-4703-A6B0-1654D1B761AF.jpeg",
+  "Messenger_creation_8FEC9E09-3D97-4847-A424-593DA2D471E2.jpeg",
+  "Messenger_creation_9f0deb2d-2671-4dde-8bec-906dc46b980c.jpeg",
+  "Messenger_creation_31D3085C-1A6C-4CA2-8627-12F100091AA6.jpeg",
+  "Messenger_creation_36E335DF-91A2-4DEE-8C6F-061FE6D6D335.jpeg",
+  "Messenger_creation_39CDDB5E-C3A0-4823-9D88-D07F62902BA5.jpeg",
+  "Messenger_creation_91f731a6-f2aa-4df2-9f47-151ab3cd4b1a.jpeg",
+  "Messenger_creation_98C7B879-1B1F-4067-82A2-FC6D7767803D.jpeg",
+  "Messenger_creation_9592D745-EB49-4245-AA59-6E97352520D8.jpeg",
+  "Messenger_creation_675584E6-4098-4376-A169-064D8FFB61E2.jpeg",
+  "Messenger_creation_740156280988576.jpeg",
+  "Messenger_creation_a3db8548-2864-43e5-b247-6fe173048fef.jpeg",
+  "Messenger_creation_A6F6DD88-FF56-4ECA-8967-89286CFDC4FF.jpeg",
+  "Messenger_creation_B01EB3EB-D17D-42DC-9AF4-3ECD0519E873.jpeg",
+  "Messenger_creation_bfe026c2-7ecc-4d66-8f38-41638687be22.jpeg",
+  "Messenger_creation_c85e4374-01b6-4871-a5d9-ddb11b2edf65.jpeg",
+  "Messenger_creation_DBAF2596-9FD1-45B5-A7EA-3964DEAE3CAD.jpeg",
+  "Messenger_creation_EC188791-D239-4A63-8586-2B83DE94D1E2.jpeg",
+  "Messenger_creation_fa52fe30-ffd4-414e-b08a-2d7d45ee0065.jpeg",
+  "received_204388792629196.jpeg","received_211127664881523 (1).jpeg",
+  "received_277434835025934.jpeg","received_354724063824292.jpeg",
+  "received_359384899998301.jpeg","received_363017192897180.jpeg",
+  "received_397394696618836.jpeg","received_418798374118879.jpeg",
+  "received_435500319112947.jpeg","received_468372665860138.jpeg",
+  "received_617775917141608.jpeg","received_678194587489290.jpeg",
+  "received_710667204480579.jpeg","received_736640968573664.jpeg",
+  "received_744359211175530.jpeg","received_756544545814388.jpeg",
+  "received_822126636387690.jpeg","received_912820729966394.jpeg",
+  "received_923883128880458.jpeg","received_976618907433993.jpeg",
+  "received_980770956760651.jpeg","received_1066083157747279.jpeg",
+  "received_1109181550159866.jpeg","received_1144101117042694.jpeg",
+  "received_1173998657176263.jpeg","received_1208521686851622.jpeg",
+  "received_1450429819227088.jpeg","received_1455643571712008.jpeg",
+  "received_1471422163458229.jpeg","received_1486450285273983.jpeg",
+  "received_1533238110558465.jpeg","received_1569324053903560.jpeg",
+  "received_1587643488476128.jpeg","received_1729660200862497.jpeg",
+  "received_1775481132959769.jpeg","received_2189037011431614.jpeg",
+  "received_2513928195446319.jpeg","received_2785518981603635.jpeg",
+  "received_3658503774468900.jpeg","received_3695321017373421.jpeg",
+  "received_3707378499476645.jpeg","received_6927623304020801.jpeg",
+  "received_7640315412717900.jpeg",
+  "OLCX8433.JPG","OPUR5233.JPG","ROFW3096.JPG","RRSM1082.JPG","SKBL5180.JPG",
+  "UGUP7729.JPG","VAVK5974.JPG","XFLT7130.JPEG","YDVO0663.JPG","FB_IMG_1703055537507.jpg"
+];
+
+const VIDEO_FILES = [
+  "2023-08-10-090247294.mp4","2023-09-09-105036857.mp4","2024-02-21-081637519.mp4",
+  "VID20230623165639.mp4","VID20230623172754.mp4","VID20230805163449.mp4",
+  "VID20230820112857.mp4","VID20230820112932.mp4","VID20230825153434.mp4",
+  "VID20231114064027.mp4","VID20231218145328.mp4","VID20240115111826.mp4",
+  "VID20240630175737.mp4","VID_124610323_121544_418.mp4","VID_20250214_155850_869.mp4",
+  "VID_20250326_041852_558.mp4","VID_20250326_041953_114.mp4","VID_55820329_033320_639.mp4",
+  "VID_64281111_074545_386.mp4","VID_64310221_225241_236.mp4","VID_64370812_225608_941.mp4",
+  "VID_76800817_164750_425.mp4","VID_80350803_231959_244.mp4",
+  "lv_0_20230416180131.mp4","lv_0_20230929172335.mp4","lv_0_20231207225655.mp4",
+  "lv_0_20231219174801.mp4","lv_7345519178134162689_20240417215349.mp4",
+  "Messenger_creation_08D35D73-636C-4FD4-9514-07AEA432D52A.mp4",
+  "Messenger_creation_F0953101-E2AE-4D0E-A59C-E988425F701F.mp4",
+  "received_454032300696470.mp4","received_1076046143426502.mp4"
+];
+
+/* Each entry = [leftCaption, rightCaption] for that spread */
+const PAGE_CAPTIONS = [
+  ["Looking at this photo brings back so many feelings. The way you looked at me, the warmth in your eyes — it's my favorite memory.","I still remember this moment like it was yesterday. Your smile lit up everything around us, and I couldn't help but fall deeper in love with you. Our first photo and the first time I saw how gorgeous you are."],
+  ["You have no idea how many times I've looked at this photo and smiled. Every single detail of this moment lives in my heart.","The way you looked in this moment took my breath away. I knew right then that you were someone truly special to me."],
+  ["This photo captures something I never want to forget. The happiness I felt being beside you was unlike anything I had ever known.","You were glowing in this moment. I remember thinking how incredibly lucky I was to be the one you chose to be with."],
+  ["Every time I see this, I feel that same warmth I felt when it was taken. You have always had a way of making everything feel right.","There is a softness in this photo that reminds me of everything I adore about you. You are beautiful inside and out."],
+  ["This moment is one of my most treasured memories. Being with you made even the ordinary feel like something worth remembering.","I love how effortlessly you shine in every photo. This one captures your spirit so perfectly and it makes me smile every time."],
+  ["Looking at this brings back the feeling of pure happiness. You were right there beside me and the world felt complete.","You have a way of making every moment feel meaningful. This photo is proof of how much light you bring into my life."],
+  ["I remember this day so clearly. The smile on your face made everything around us disappear and it was just the two of us.","This is one of those memories that will stay with me forever. You looked so beautiful and I fell a little more in love with you."],
+  ["Every detail of this moment is something I hold close to my heart. You were radiant and I was the luckiest person alive.","This photo reminds me why I cherish every moment we have together. Your presence has always felt like home to me."],
+  ["There is something about this memory that makes my heart feel full. You have always had the most beautiful soul to match your smile.","I never want to forget how this moment felt. You were everything to me and this photo captures exactly why."],
+  ["The joy in this photo is something I felt deep in my bones. Being near you has always been the best part of any day.","You looked so stunning in this moment and I remember thinking that no photo could ever do you justice. But this one comes close."],
+  ["This memory reminds me of a time when everything felt simple and good. You were the reason for all of it.","Looking at this fills my heart with a kind of happiness that never fades. You have always been worth every feeling."],
+  ["I love this photo because it captured you exactly as you are — genuine, warm, and impossibly beautiful.","This moment meant so much to me. The way you smiled made me feel like the whole world was ours to keep."],
+  ["Every time I look at this I am reminded of how blessed I was to share these moments with you. Thank you for existing.","You have always known how to make a moment feel special just by being in it. This photo is my proof of that."],
+  ["This memory is one I return to often when I need to feel something warm. You have always been that warmth for me.","The happiness in this photo is real and lasting. I felt it then and I feel it now every time I see your face."],
+  ["You were so beautiful in this moment. I remember wishing time would slow down just so I could stay in it a little longer.","This photo holds a piece of something precious. The kind of memory that only gets more meaningful as the years go by."],
+  ["I treasure this memory more than words can say. You made every single moment feel worth holding onto forever.","Looking at you in this photo reminds me of the first time I realized how deeply I cared for you. That feeling never left."],
+  ["You have a smile that changes the whole atmosphere of a room. This photo captured it and I am grateful for that every day.","This is one of those moments that felt perfect while it was happening. You were right there and everything else faded away."],
+  ["There is a kind of love in this photo that goes beyond words. It lives in the way you looked and the way I felt.","You always had a way of making me feel seen and loved. This moment is a reminder of everything that made us beautiful."],
+  ["This memory carries a quiet joy that I will always keep with me. You were the reason for every good thing I felt then.","The light in your eyes in this photo is something I could never forget. It told me everything I ever needed to know."],
+  ["I look at this and feel grateful all over again. Grateful for you, for this moment, and for everything it meant to us.","You were so full of life in this photo. That energy you carry has always been one of the things I love most about you."],
+  ["This photo is a reminder that some moments are just meant to be kept. This one belongs to both of us forever.","You looked so naturally beautiful here and I remember how proud I felt to be standing beside someone like you."],
+  ["Every moment captured here felt like a gift. You have always had a way of turning ordinary days into something unforgettable.","I love this memory because it reminds me of how happy we were. That happiness was real and it mattered deeply to me."],
+  ["The way you look in this photo makes my heart skip even now. Some things never lose their ability to move you.","This moment lives quietly in the best part of my memory. A place I return to whenever I need to feel something good."],
+  ["You were absolutely glowing here and I remember how everything around you seemed to soften just because you were there.","I carry this memory gently because it meant so much to me. You were everything in this moment and I did not take that for granted."],
+  ["This photo captures a version of you that I will always hold dear. Full of warmth and grace and everything that makes you, you.","Looking at this I feel the same tenderness I felt back then. Some feelings are too real to ever fully put into words."],
+  ["You made this moment shine just by being in it. That is something you have always done without even trying.","This memory holds a sweetness that time cannot touch. I am so grateful I got to be part of moments like this with you."],
+  ["I love everything about this photo. The way you smiled, the way you looked — it is all so perfectly, beautifully you.","This was one of those days I wished could last forever. You were right there and everything felt exactly as it should be."],
+  ["There is so much warmth in this memory. The kind that stays with you long after the moment is gone.","You have always had the most expressive eyes. In this photo they told a whole story and I was lucky enough to be in it."],
+  ["This photo is one of my favorites because it shows you the way I always see you — radiant and full of life.","I remember how this day felt and I am so glad this photo exists. It keeps that feeling alive for me every time I look."],
+  ["The joy in your expression here is something I never want to forget. You were so genuinely happy and it made me happy too.","This moment was simple but it meant everything. The best memories are usually the ones that happen without any planning."],
+  ["You looked so effortlessly beautiful here. This photo is a reminder of all the reasons I fell for you.","I hold this memory close because it reminds me of a time when your happiness and mine were completely intertwined."],
+  ["This photo makes me smile every single time I see it. You have a way of making even a captured moment feel alive.","The warmth you carry in this image is real. I felt it back then and it still reaches me now every time I look at you."],
+  ["You were absolutely stunning in this moment and I am so glad it was captured. Some things deserve to be remembered.","This memory is full of a kind of peace and happiness that I treasure. You were the source of all of it."],
+  ["I look at this and feel a deep sense of gratitude. For you, for this moment, and for all the love it represented.","Your smile here is one I could recognize anywhere. It is the one that told me everything was going to be okay."],
+  ["This photo holds a piece of my heart in it. The moments we shared together were some of the most meaningful of my life.","You looked so beautiful and I remember not wanting to look away. You had a way of making time feel irrelevant."],
+  ["Every detail of this memory is something I cherish. The way you laughed, the way you looked — it is all still so vivid.","This was a moment I wanted to hold onto forever. Looking at it now I realize I have, in the best possible way."],
+  ["You have always had a way of making me feel like the luckiest person in the room. This photo is a reminder of that.","The happiness in this image is genuine and lasting. It was real when it happened and it is still real every time I look."],
+  ["This memory belongs to a time when everything felt warm and right. You were the reason for all of that warmth.","You were shining in this moment and I could not take my eyes off you. Some things are just too beautiful to look away from."],
+  ["I love how this photo captured the real you. Unguarded, genuine, and more beautiful than you probably even realize.","This moment is proof that the best things in life are not things at all. They are feelings and people and memories like this."],
+  ["You looked so at peace in this photo and it made me feel at peace too. That was always the effect you had on me.","This memory fills me with a quiet joy that I carry everywhere. You planted it there and it has never stopped growing."],
+  ["There is something about this photo that I cannot stop returning to. Maybe it is the way you looked. Maybe it is just you.","I remember every detail of this moment. The way you smiled, the way the light fell, the way you made everything feel easy."],
+  ["This photo is a treasure. Not because it is perfect but because it is real and it is ours and it meant everything.","You have always been the most beautiful part of any picture. This one is no different and I am grateful for every second of it."],
+  ["Looking at this reminds me why some memories are worth keeping forever. You are at the center of all my favorite ones.","You were so full of life here and it was contagious. I remember feeling like nothing bad could exist in the same space as your smile."],
+  ["This moment captured something I have always loved about you — your ability to be completely, beautifully yourself.","The way you look in this photo tells a story. One full of warmth and love and all the things that made our time together so precious."],
+  ["I treasure this memory because it holds a feeling I never want to lose. The feeling of being close to you and knowing I was right where I was supposed to be.","You were radiant here. Every time I look at this I am reminded of how much joy you brought into my world just by existing."],
+  ["This photo is one of the quiet kinds of beautiful. The kind that sneaks up on you and stays for a long time.","I love this memory because it was real. No performance, no pretending — just you, just us, and everything that came naturally."],
+  ["Your eyes in this photo say everything your words never needed to. I have always loved how much they could communicate.","This moment is one I would choose again without hesitation. You were there and that made it perfect."],
+  ["I look at this and feel a rush of something I can only describe as gratitude. For having known you and loved you the way I did.","You carry a kind of beauty that photographs struggle to contain. But this one came close and I will always be glad it was taken."],
+  ["This memory holds a sweetness I return to often. It reminds me that some of the best moments are the ones lived quietly.","You were so natural and lovely here. The kind of beautiful that does not try because it does not have to."],
+  ["Looking at this I remember how whole I felt beside you. That feeling is something I will carry with me for the rest of my life.","This photo is a small but perfect piece of something larger. A love that was real, deep, and worth every feeling it brought."],
+  ["You have always had the most genuine smile. The kind that starts in your eyes before it ever reaches your lips. This photo has that smile.","I love this memory because it happened naturally. The best kind always do. And you were always the best kind."],
+  ["This moment belongs to a version of us that I will always cherish. You were right there and everything about it felt true.","You looked so happy here and that happiness was something I wanted to protect and hold onto for as long as I could."],
+  ["There is a depth to this photo that makes me pause every time I see it. It is not just an image — it is a feeling.","Your presence in this moment made everything around it brighter. That is what you have always done without even trying."],
+  ["I love this photo because it is you exactly as I remember you. Warm, beautiful, and completely irreplaceable.","This memory reminds me that real beauty is not something you wear — it is something you carry. And you have always carried it."],
+  ["You were so beautiful in this moment and I hope you know that. I hope you have always known that.","This photo captures something I never want to let go of. A moment that proved to me that some things are truly worth treasuring."],
+  ["Looking at this fills me with a tenderness I cannot quite explain. It just feels like the truest thing I have ever known.","You made this moment special just by being present in it. That was always one of your greatest gifts — your presence."],
+  ["This memory is one I would relive in a heartbeat. You were there and everything about being near you felt like the right place to be.","You have always looked most beautiful when you were not thinking about it. This photo caught you in exactly one of those moments."],
+  ["I treasure every detail of this moment. The light, the way you looked, the feeling that everything was exactly as it should be.","This photo is proof that some feelings are bigger than the moments that create them. This one lives in me still."],
+  ["You were glowing in this moment and I remember being completely unable to look away. You have always had that kind of pull.","I love this memory because it is simple and honest and real. Just like everything between us that mattered most."],
+  ["This photo makes my heart feel full every time I look at it. You were right there and the world felt incredibly kind.","Looking at this I am reminded of all the reasons I cared for you so deeply. Every single one of them is still true."],
+  ["You looked so serene and beautiful here. I remember thinking that I wanted to remember exactly this version of you forever.","This moment holds something precious that no amount of time can diminish. It is yours and mine and it always will be."],
+  ["I love how this captured you in a way that feels so honest and true. That is the version of you I always loved most.","This memory carries a warmth that goes straight to my heart. You put it there and I have been grateful ever since."],
+  ["You were so quietly beautiful in this moment. The kind of beautiful that settles into you slowly and never quite leaves.","This photo is a reminder that the best things are often the simplest. A moment, a smile, a memory — and you at the center of it."],
+  ["Looking at this reminds me how much I valued every moment spent beside you. Each one felt like something worth protecting.","You have always had a way of making me feel like the moment I was in was the most important one. This photo proves it."],
+  ["This memory is one I return to when I want to feel something warm and true. You are always the one I find there.","You looked so alive and beautiful here. I remember the feeling of being near you and thinking that nothing could be better."],
+  ["I love this photo because it captured something honest. No filters, no pretending — just you, real and completely beautiful.","This moment reminded me that the best things in life do not need to be dramatic to be deeply meaningful."],
+  ["You were radiant here and I hope some part of you felt it too. You deserved to feel every bit of how beautiful you were.","This memory holds a kind of joy that I never want to let go of. You gave it to me and it has never stopped mattering."],
+  ["Looking at this I feel a deep and quiet love that never really went away. Some things stay with you regardless of everything else.","You have always carried yourself with a grace that I admired. This photo captured it perfectly and I love it for that."],
+  ["This moment is one of those rare ones that felt important while it was happening. I held onto it then and I am still holding it now.","Your smile in this photo is the kind that changes the energy of a room. I remember feeling it and never wanting it to stop."],
+  ["I treasure this photo because it is evidence of something beautiful. A time, a feeling, a person who meant everything to me.","You were so perfectly yourself in this moment. Genuine, warm, and full of a light that touched everything around you."],
+  ["This memory belongs to a place in my heart that I keep very carefully. You live there and you always will.","Looking at you in this photo makes me feel the same way I felt then — grateful beyond words for having known you."],
+  ["You looked so effortlessly stunning here. The kind of beauty that does not ask for attention but cannot help but receive it.","This moment carries a sweetness that I return to often. You were right there and everything about it felt like grace."],
+  ["I love this memory because it holds the version of you that I fell for completely. Open, warm, and entirely beautiful.","This photo is a small window into something very big. A love that grew quietly and meant more than I knew how to say."],
+  ["You were glowing in this moment and I remember thinking how lucky I was to be someone you let close enough to see it.","This memory is one of the gentlest ones I have. It holds no noise, just warmth and your face and the feeling of peace."],
+  ["Looking at this I am reminded of how deeply I cared for you. That feeling never needed an occasion — it was just always there.","You have always been beautiful but in this moment you were something else entirely. I have never forgotten that."],
+  ["This photo captures a happiness that was completely unplanned and completely real. The best kind always are.","I love how naturally beautiful you are in this image. There is nothing forced here — just you and your wonderful, effortless self."],
+  ["This memory lives in the warmest part of who I am. You put it there and I have carried it with me every day since.","You looked so full of life in this moment. That energy you carry has always been one of the most beautiful things about you."],
+  ["I look at this photo and feel a quiet joy rise up in me. It is the kind that only comes from memories that were truly good.","You were absolutely lovely here and I hope you know that I saw it. I always saw it, even when you did not."],
+  ["This moment was one of those rare gifts — simple, unscripted, and more beautiful for it. You were at the center of all of it.","Looking at this fills me with a kind of tenderness that I cannot put into a single word. You have always done that to me."],
+  ["You were so beautiful in this photo and I remember wanting to freeze the moment so it would never have to end.","This memory holds a feeling of completeness. Like everything was exactly where it was supposed to be and you were part of why."],
+  ["I love this photo because it is honest. It does not try to be more than it is and neither did you. That was always enough.","You have always had a way of making me feel like the best version of myself. This moment is a reminder of all the ways you did that."],
+  ["This memory is one of the quiet ones that carry the most weight. The kind you do not talk about but never stop feeling.","You were so naturally radiant here. The kind of beautiful that requires no effort and leaves no doubt."],
+  ["Looking at this I feel the same soft pull I always felt toward you. Some things do not change no matter how much time passes.","This photo holds a story that words cannot fully tell. It lives in the light and the look on your face and the feeling of that day."],
+  ["You were so present in this moment and it was something I always loved about you. The way you could just be, completely and fully.","This memory is a gift I did not know I was being given at the time. Now I hold it with both hands and I never put it down."],
+  ["I treasure this photo because it shows you the way I always saw you — whole, warm, and irreplaceable.","You have always looked most like yourself when you were happy. This photo caught that perfectly and I love it for that."],
+  ["This moment carried a feeling of rightness that I have not found anywhere else. You were there and that was why.","Looking at this I am reminded that real beauty is not a surface thing. It comes from somewhere deeper and you have always had it."],
+  ["You were so lovely here. Every detail of this photo is something I want to keep for the rest of my life.","This memory holds a kind of happiness that is hard to describe but impossible to forget. You gave it to me without even knowing."],
+  ["I love how this photo captured the lightness of that moment. You always made everything feel lighter just by being in it.","You were radiant and calm and completely yourself here. That has always been the version of you I loved most."],
+  ["This moment reminds me that the best things in my life were not things at all. They were moments and feelings and you.","Looking at this I feel a warmth that I have carried since the day it was taken. You put it there and it has never cooled."],
+  ["You looked so beautiful in this moment and I remember being completely unable to stop smiling because of it.","This photo is one of my most treasured. Not because it is grand but because it is real and it is ours and it mattered deeply."],
+  ["I love this memory because it is soft and true and full of you. The best memories always are.","You were so genuinely happy here and I was so genuinely happy because of you. That is a feeling I will keep forever."],
+  ["This moment is one I would choose again and again without hesitation. You were there and that made it everything.","Looking at you in this photo fills me with a love that time has not touched. It is still exactly as real as it ever was."],
+  ["You have always been someone worth remembering. This photo is proof of that and I will always be glad it exists.","This memory reminds me that the truest feelings are the ones that do not need to be announced. They just live quietly inside you."],
+  ["I look at this and feel something settle in my chest. A warmth and a peace that only comes from the best memories.","You were so full of grace in this moment. The kind of grace that is not practiced but simply who you are at your core."],
+  ["This photo holds more than a moment — it holds a feeling. One that has stayed with me every day since it was taken.","You have always had a light about you that photographs never quite capture. But this one came closer than most and I love it."],
+  ["Looking at this reminds me of how good it felt to be near you. Like the world was kinder just because you were in it.","You were beautiful and present and completely yourself here. I have always loved you most in moments exactly like this one."],
+  ["This memory is one I return to when I want to feel something real and good. You are always right there when I do.","You looked so calm and lovely in this moment. I remember thinking that I wanted to remember exactly this version of you."],
+  ["I love how unguarded you look here. Real beauty does not hide and you have never needed to hide yours.","This moment belongs to a chapter of my life that I will always consider one of the most meaningful. You were its best part."],
+  ["You were so effortlessly beautiful in this photo. The kind of beautiful that makes everything around it better just by being there.","This memory carries a joy that is quiet and deep and absolutely mine. You are the reason it exists and I am grateful for it."],
+  ["I treasure this photo because it is a window into something I never want to lose sight of. A time when you were right here with me.","You have always had a way of making a moment feel significant. This one was and I felt it then as clearly as I feel it now."],
+  ["This moment is one of the ones I go back to when I want to feel close to something true. You are always there.","Looking at this I am filled with a tenderness that has never really left. It just lives in me now, quietly and permanently."],
+  ["You were glowing here and I remember being aware of it in real time. Some moments let you know they are special while they are still happening.","This photo holds a gentleness that I have always associated with you. Soft and real and full of something worth keeping."],
+  ["I love this memory because it held no pretense. Just you and your natural, honest, unassuming beauty.","You were so wonderful in this moment and I hope you felt it. You deserved to feel every bit of how wonderful you were."],
+  ["This photo is evidence of something real. A moment that happened and mattered and belongs to both of us always.","Looking at you here makes me feel the same way I felt then. Like I was exactly where I was supposed to be."],
+  ["You have always had the kind of presence that makes a moment unforgettable. This photo is proof of exactly that.","This memory is one I have kept very carefully. It deserves that kind of care because it has always been worth it."],
+  ["I look at this and feel something soft and lasting move through me. That is what the best memories always do.","You were so naturally lovely in this moment. No effort, no artifice — just you, as beautiful as you have always been."],
+  ["This photo reminds me that some of the best things are the ones you almost miss because you are too busy living them.","You looked so free and happy here and I loved that version of you with everything I had."],
+  ["Looking at this brings back a feeling I will never tire of. The feeling of being near you and knowing it was exactly right.","You have always made the people around you feel something. In this photo that something is written all over your face."],
+  ["This moment is one I would give anything to step back into for just a minute. You were right there and it was perfect.","You were radiant and warm and so completely you. I fell in love with exactly this version of you and I have never stopped."],
+  ["I love this photo because it is true. True to who you are and true to what we shared and true to how I will always feel.","This memory holds a kind of love that I carry in the quietest part of myself. It is always there, steady and sure."],
+  ["You were so beautiful in this moment that I remember holding my breath a little. You have always had that effect on me.","This photo is one of my most precious. Not because of how it looks but because of how it makes me feel every single time."],
+  ["Looking at this I feel a rush of everything I felt that day. Gratitude, love, wonder — you brought all of it out in me.","You have always been the kind of person who makes the world around you more beautiful just by existing in it."],
+  ["This moment felt like a small miracle while it was happening. Looking at it now I know that feeling was right.","You were so full of warmth here and I remember letting it wash over me and feeling completely, wholly grateful."],
+  ["I love this memory because it is one of the purest ones I have. Just you, just this moment, and everything it meant.","You looked so genuinely joyful here and I loved you so much for it. Joy on you has always been one of the best things."],
+  ["This photo holds the kind of beauty that does not shout. It whispers and stays and grows more meaningful over time.","Looking at you in this moment I feel the same thing I always felt — that being near you was one of the great privileges of my life."],
+  ["You were so present and alive in this moment and it was contagious. Everything around you seemed to come to life too.","This memory is one that I will carry with deep and careful love for as long as I am able to carry anything at all."],
+  ["I love how real this photo is. Real moments make the best memories and this one is as real as it gets.","You have always had the most beautiful way of just being. This photo caught that and I am endlessly glad it did."],
+  ["This moment is one of the quiet kind that end up mattering the most. You were there and everything was exactly right.","Looking at this fills me with a warmth that starts in my chest and spreads outward. That is what you have always done to me."],
+  ["You were so lovely here. Completely yourself and completely wonderful and I was so grateful to be near you.","This memory holds a feeling that I never want to let go of. The feeling of being close to someone who meant everything."],
+  ["I treasure this photo because it holds a version of you that I always want to remember. Beautiful, open, and completely real.","You have always looked most beautiful when you were not trying. This moment caught exactly that and it is perfect."],
+  ["This moment reminded me that happiness does not need to be loud to be deep. You were there and the world was quiet and good.","Looking at this I feel the same soft joy I felt then. Some feelings do not age and this is very much one of them."],
+  ["You were glowing in this photo and I remember wishing I could bottle the feeling of standing beside you in that moment.","This memory is one I revisit often because it always brings me back to something real and warm and deeply good."],
+  ["I love this photo because it shows the version of you that I fell hardest for. Completely unguarded and infinitely beautiful.","You have always had a warmth that reaches people before you even speak. This photo shows exactly that and I love it."],
+  ["This moment holds something rare. The kind of happiness that is simple and true and completely yours to keep.","Looking at you here I am reminded that beauty is not about perfection. It is about being fully and honestly yourself."],
+  ["You were so quietly stunning in this moment. The kind of beautiful that takes a second to land but stays forever.","This memory is a keeper. One of the ones that lives in the best and most protected part of who I am."],
+  ["I love how this photo makes me feel every time. Like I am right back in that moment, standing beside you, feeling everything.","You have always been someone worth looking at and worth knowing and worth remembering. This photo reminds me of all three."],
+  ["This moment was one of those unexpected ones that turns out to be among the most meaningful. You were the reason for that.","Looking at this I feel a love that is calm and certain and completely unhurried. The best kind has always been that way."],
+  ["You were so beautiful and real in this moment and I remember thinking that I never wanted to take any of it for granted.","This memory reminds me of everything I loved about being near you. The warmth, the ease, the feeling that everything was right."],
+  ["I treasure this photo because it is honest and full and completely true to the moment it came from.","You have always carried a joy that is infectious. In this photo it is everywhere and I love it with my whole heart."],
+  ["This moment belongs to a time I will always consider one of the best of my life. You were at the heart of all of it.","Looking at you in this image I feel the same rush of love I felt then. Some things just never go away and I am glad for it."],
+  ["You were so naturally radiant here. The kind of beautiful that does not perform but simply is. I have always loved that about you.","This memory holds a tenderness that I keep very close. It belongs to you and to us and it always will."],
+  ["I love this photo because it is a small piece of something very large. A love that was real and lasting and completely worth it.","You were so full of life in this moment. That is one of the things I have always admired most about you."],
+  ["This moment is one I hold with both hands. It was simple and beautiful and it mattered more than words can say.","Looking at this fills me with a quiet and certain happiness. The kind that comes from knowing something was truly good."],
+  ["You were absolutely beautiful in this moment and I remember being so grateful that I got to see it and feel it and keep it.","This memory is one of the softest ones I have. Soft in the way that the best things in life often are — gentle and lasting."],
+  ["I love how this photo captured a moment that might have gone unnoticed. The small ones are sometimes the most precious.","You have always had a way of making everything feel meaningful. This moment is proof of that and I cherish it completely."],
+  ["You were so genuinely present in this moment. That quality of being fully there was one of the things I treasured most about you.","This photo holds a feeling I return to when I want to remember what it was like to be completely happy. You were why."],
+  ["Looking at this I feel something rise in me that never quite settles back down. It is love and it is real and it is yours.","You have always had a beauty that goes far beyond what any camera could catch. But this one caught a good piece of it."],
+  ["This memory is one of those rare ones that stays vivid no matter how much time passes. You are still right there in it.","You were so luminous in this moment. The kind of light that comes from within and makes everything around it better."],
+  ["I love this photo because it is a window into something I never want to forget. You were right there and I was right where I belonged.","This moment carries the weight of something genuinely important. A feeling, a person, a memory that changed me."],
+  ["You were beautiful in the way that only real people can be — full of depth and warmth and something entirely your own.","This memory is one of the ones I keep in the most careful place. It deserves that kind of keeping and so do you."],
+  ["Looking at this I feel a gratitude that goes all the way down. For this moment, for you, for everything it meant.","You have always made every moment feel like it counted. This photo is proof that you were right — they all did."],
+  ["This moment is one of the best ones I have. Simple and true and full of a feeling that I never wanted to stop having.","You were so beautiful here and I hope some part of you always knew it. You deserved to know it every single day."],
+  ["I love this photo because it holds a truth that I have carried with me ever since. You were wonderful. You are wonderful. That never changes.","This memory is the kind that grows more precious over time. Like all the best things, it only gets better with keeping."],
+];
+
+function buildInitialPages() {
+  const all = [
+    ...MEDIA_FILES.map(f=>`Pictures/${f}`),
+    ...VIDEO_FILES.map(f=>`Pictures/${f}`)
+  ];
+  for (let i=0; i<all.length; i+=2) {
+    const pairIdx = pages.length; // current spread index
+    const pair = PAGE_CAPTIONS[pairIdx] || PAGE_CAPTIONS[pairIdx % PAGE_CAPTIONS.length];
+    pages.push({
+      photos: [all[i]||null, all[i+1]||null],
+      captions: [pair[0], pair[1]]
+    });
+  }
+}
+buildInitialPages();
+
+/* ═══════════════════════════════
+   SLOT HTML
+═══════════════════════════════ */
+function slotHTML(pi, si) {
+  const src = pages[pi].photos[si] || '';
+  const has = !!src;
+  const isVideo = src && /\.(mp4|mov|webm)$/i.test(src);
+  const mediaTag = isVideo
+    ? `<video src="${src}" loop playsinline controls preload="none" onerror="this.style.display='none'"></video>`
+    : `<img src="${src}" alt="Photo" loading="lazy">`;
+  return `
+    <div class="photo-slot${has?' has-image':''}" id="slot-${pi}-${si}">
+      ${mediaTag}
+      <div class="upload-hint">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Add photo</span>
+      </div>
+    </div>
+    <input type="file" id="input-${pi}-${si}" class="photo-input" accept="image/*,video/*"
+      onchange="loadPhoto(event,${pi},${si})">`;
+}
+
+/* ═══════════════════════════════
+   FLIPBOOK CLASS — virtual rendering
+   Only 5 leaves have real content at any time.
+   All other leaves are empty shells (no src, no network).
+   Content is injected on demand as you navigate.
+═══════════════════════════════ */
+class FlipBook {
+  constructor(bookElem) {
+    this.book    = bookElem;
+    this.leaves  = [];       // all leaf DOM elements
+    this.loaded  = new Set(); // which leaf indices have content
+    this.pos     = 0;
+    this.busy    = false;
+  }
+
+  /* ── Cover leaf (always loaded — just one image) ── */
+  buildCoverLeaf() {
+    const leaf = document.createElement('div');
+    leaf.className = 'leaf cover';
+    const front = document.createElement('div');
+    front.className = 'page front';
+    front.innerHTML = `
+      <div class="cover-spread">
+        <div class="cover-frame"></div>
+        <div class="cover-photo-frame">
+          <img src="Pictures/Cover photo.jpg" alt="Cover photo">
+        </div>
+        <div class="cover-rule"></div>
+        <input class="cover-title-input" type="text" placeholder="A Place called Us" maxlength="42">
+        <div class="cover-rule"></div>
+        <input class="cover-sub-input" type="text" placeholder="A collection of beautiful moments" maxlength="65">
+        <span class="cover-hint">Swipe or press Next →</span>
+      </div>`;
+    const back = document.createElement('div');
+    back.className = 'page back';
+    back.innerHTML = `<div class="page-left"></div>`;
+    leaf.appendChild(front);
+    leaf.appendChild(back);
+    return leaf;
+  }
+
+  /* ── Empty shell — no images, zero network cost ── */
+  buildEmptyLeaf() {
+    const leaf = document.createElement('div');
+    leaf.className = 'leaf';
+    const front = document.createElement('div');
+    front.className = 'page front';
+    front.innerHTML = `<div class="page-right"></div>`;
+    const back = document.createElement('div');
+    back.className = 'page back';
+    back.innerHTML = `<div class="page-left"></div>`;
+    leaf.appendChild(front);
+    leaf.appendChild(back);
+    return leaf;
+  }
+
+  /* ── Fill a leaf with real content (called on demand) ── */
+  populateLeaf(leafIdx) {
+    if (leafIdx === 0) return;
+    if (this.loaded.has(leafIdx)) return;
+    this.loaded.add(leafIdx);
+
+    const pageIdx = leafIdx - 1;
+    if (pageIdx >= pages.length) return;
+
+    const leaf = this.leaves[leafIdx];
+    if (!leaf) return;
+
+    const p    = pages[pageIdx];
+    const numL = pageIdx * 2 + 1;
+    const numR = pageIdx * 2 + 2;
+
+    leaf.querySelector('.page.front .page-right').innerHTML = `
+      <div class="page-corner">🌷</div>
+      <div class="page-label">Photo ${numR}</div>
+      ${slotHTML(pageIdx, 1)}
+      <p class="caption-static">${p.captions[1]}</p>
+      <div class="page-num">${numR}</div>`;
+
+    leaf.querySelector('.page.back .page-left').innerHTML = `
+      <div class="page-corner">🌷</div>
+      <div class="page-label">Photo ${numL}</div>
+      ${slotHTML(pageIdx, 0)}
+      <p class="caption-static">${p.captions[0]}</p>
+      <div class="page-num">${numL}</div>`;
+  }
+
+  /* ── Unload a leaf far from current position to free memory ── */
+  unloadLeaf(leafIdx) {
+    if (leafIdx === 0) return;
+    if (!this.loaded.has(leafIdx)) return;
+    const leaf = this.leaves[leafIdx];
+    if (!leaf) return;
+
+    /* Clear all img src and video src to stop network + free memory */
+    leaf.querySelectorAll('img[src]').forEach(img => { img.src = ''; });
+    leaf.querySelectorAll('video[src]').forEach(vid => { vid.src = ''; vid.load(); });
+
+    /* Reset inner HTML back to empty shells */
+    const fr = leaf.querySelector('.page.front .page-right');
+    const bk = leaf.querySelector('.page.back .page-left');
+    if (fr) fr.innerHTML = '';
+    if (bk) bk.innerHTML = '';
+
+    this.loaded.delete(leafIdx);
+  }
+
+  /* ── Sliding window: load near, unload far ── */
+  loadWindow() {
+    const LOAD_AHEAD  = 2;
+    const LOAD_BEHIND = 1;
+    const UNLOAD_DIST = 5; /* unload leaves beyond this distance */
+
+    for (let i = 0; i < this.leaves.length; i++) {
+      const dist = i - this.pos;
+      if (dist >= -LOAD_BEHIND && dist <= LOAD_AHEAD) {
+        this.populateLeaf(i);
+      } else if (Math.abs(dist) > UNLOAD_DIST) {
+        this.unloadLeaf(i);
+      }
+    }
+  }
+
+  /* ── Build DOM: cover + empty shells only ── */
+  init() {
+    const keep = this.book.querySelectorAll('.bg-spread, .spine-strip');
+    this.book.innerHTML = '';
+    keep.forEach(el => this.book.appendChild(el));
+
+    this.leaves = [];
+    this.loaded  = new Set();
+
+    /* Cover */
+    const cover = this.buildCoverLeaf();
+    this.book.appendChild(cover);
+    this.leaves.push(cover);
+    this.loaded.add(0);
+
+    /* Empty shells for every page spread */
+    pages.forEach(() => {
+      const leaf = this.buildEmptyLeaf();
+      this.book.appendChild(leaf);
+      this.leaves.push(leaf);
+    });
+
+    this.pos = 0;
+    /* Load first window after a short delay so first paint is instant */
+    requestAnimationFrame(() => this.loadWindow());
+    this.render();
+  }
+
+  render() {
+    const total = this.leaves.length;
+    this.leaves.forEach((leaf, index) => {
+      const pos = index - this.pos;
+      if (pos < 0) {
+        /* Turned — use translate3d depth like Doc 8 for smoother feel */
+        leaf.style.transform = `translate3d(0,0,${index}px) rotateY(-180deg)`;
+        leaf.style.zIndex = index + 1;
+        leaf.classList.add('turned');
+      } else {
+        /* Not yet turned — stack with depth */
+        leaf.style.transform = `translate3d(0,0,${-pos + index}px) rotateY(0deg)`;
+        leaf.style.zIndex = total - index + 1;
+        leaf.classList.remove('turned');
+      }
+    });
+    updateNav(this.pos, this.leaves.length);
+  }
+
+  go(delta) {
+    if (this.busy) return;
+    const next = this.pos + delta;
+    const max  = this.leaves.length;
+    if (next < 0 || next > max) return;
+    this.busy = true;
+
+    /* Find the leaf that is actually flipping this turn */
+    const flippingIdx = delta > 0 ? this.pos : next;
+    const flippingLeaf = this.leaves[flippingIdx];
+
+    /* Add turning class to trigger curl shadow animation */
+    if (flippingLeaf) flippingLeaf.classList.add('turning');
+
+    this.pos = next;
+    this.loadWindow();
+    this.render();
+
+    /* Remove turning class after animation completes */
+    setTimeout(() => {
+      if (flippingLeaf) flippingLeaf.classList.remove('turning');
+      this.busy = false;
+    }, 1100);
+  }
+}
+
+/* ═══════════════════════════════
+   NAV
+═══════════════════════════════ */
+function updateNav(pos, max) {
+  document.getElementById('prevBtn').disabled = pos === 0;
+  document.getElementById('nextBtn').disabled = pos >= max - 1;
+  document.getElementById('pageIndicator').textContent =
+    pos === 0 ? 'Cover' : `Page ${pos} of ${max - 1}`;
+}
+
+/* ═══════════════════════════════
+   PHOTO UPLOAD
+═══════════════════════════════ */
+function loadPhoto(event, pi, si) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pages[pi].photos[si] = e.target.result;
+    /* Update ALL matching slots (front + back faces both have this slot) */
+    document.querySelectorAll(`#slot-${pi}-${si}`).forEach(slot => {
+      const isVideo = file.type.startsWith('video/');
+      if (isVideo) {
+        let vid = slot.querySelector('video');
+        if (!vid) { vid = document.createElement('video'); vid.loop=true; vid.playsInline=true; vid.controls=true; slot.prepend(vid); }
+        vid.src = e.target.result; vid.style.display = 'block';
+      } else {
+        let img = slot.querySelector('img');
+        if (!img) { img = document.createElement('img'); img.alt='Photo'; slot.prepend(img); }
+        img.src = e.target.result; img.style.display = 'block';
+      }
+      slot.classList.add('has-image');
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ═══════════════════════════════
+   INIT
+═══════════════════════════════ */
+const flipBook = new FlipBook(document.getElementById('bookWrapper'));
+flipBook.init();
+
+/* ── Single set of event listeners ── */
+document.getElementById('prevBtn').addEventListener('click', () => flipBook.go(-1));
+
+/* Music starts on first Next click then loops forever */
+const bgMusic = new Audio('nicole_-_Panaginip_(mp3.pm).mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
+let musicStarted = false;
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  flipBook.go(1);
+  if (!musicStarted) {
+    bgMusic.play().catch(() => {});
+    musicStarted = true;
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') flipBook.go(1);
+  if (e.key === 'ArrowLeft')  flipBook.go(-1);
+});
+
+let _tx = 0, _ty = 0;
+document.addEventListener('touchstart', e => {
+  _tx = e.touches[0].clientX;
+  _ty = e.touches[0].clientY;
+}, { passive:true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - _tx;
+  const dy = e.changedTouches[0].clientY - _ty;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 52) {
+    dx < 0 ? flipBook.go(1) : flipBook.go(-1);
+  }
+}, { passive:true });
+
+/* ── Envelope overlay ── */
+document.getElementById('addPageBtn').addEventListener('click', () => {
+  document.getElementById('envelopeOverlay').classList.add('active');
+});
+document.getElementById('envelopeContainer').addEventListener('click', function() {
+  this.classList.add('opened');
+});
+document.getElementById('closeLetter').addEventListener('click', () => {
+  document.getElementById('envelopeContainer').classList.remove('opened');
+  setTimeout(() => { document.getElementById('envelopeOverlay').classList.remove('active'); }, 300);
+});
+document.getElementById('envelopeOverlay').addEventListener('click', function(e) {
+  if (e.target === this) {
+    document.getElementById('envelopeContainer').classList.remove('opened');
+    setTimeout(() => { this.classList.remove('active'); }, 300);
+  }
+});
+</script>
+</body>
+</html>
